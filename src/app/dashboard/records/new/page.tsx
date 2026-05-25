@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,19 +9,48 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import HuntingGroundInput from "@/components/HuntingGroundInput";
 
 export default function NewRecordPage() {
+  return (
+    <Suspense>
+      <NewRecordForm />
+    </Suspense>
+  );
+}
+
+function NewRecordForm() {
+  const searchParams = useSearchParams();
+  const characterId = searchParams.get("characterId");
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [levelBefore, setLevelBefore] = useState("");
-  const [levelAfter, setLevelAfter] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState(""); // 숫자만 저장 (콤마 제거)
   const [serviceDate, setServiceDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().slice(0, 16) // "YYYY-MM-DDTHH:mm"
   );
+  const [expGained, setExpGained] = useState(""); // 숫자만 저장
+  const [huntHours, setHuntHours] = useState("");
+  const [huntMinutes, setHuntMinutes] = useState("");
+  const [huntingGround, setHuntingGround] = useState("");
+
+  const handleNumericInput = (setter: (v: string) => void) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setter(e.target.value.replace(/[^0-9]/g, ""));
+    };
+
+  const withCommas = (val: string) =>
+    val ? parseInt(val).toLocaleString() : "";
   const [images, setImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!characterId) {
+      toast.error("캐릭터를 선택해주세요.");
+      router.replace("/dashboard");
+    }
+  }, [characterId, router]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -38,35 +67,14 @@ export default function NewRecordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!characterId) return;
     setLoading(true);
     const supabase = createClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("로그인이 필요합니다.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!profile) {
-      toast.error("프로필을 찾을 수 없습니다.");
-      setLoading(false);
-      return;
-    }
-
-    // 이미지 업로드
     const imageUrls: string[] = [];
     for (const file of images) {
       const ext = file.name.split(".").pop();
-      const path = `${profile.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const path = `${characterId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("service-records")
@@ -85,14 +93,18 @@ export default function NewRecordPage() {
       imageUrls.push(urlData.publicUrl);
     }
 
+    const huntDurationMinutes =
+      (parseInt(huntHours || "0") * 60) + parseInt(huntMinutes || "0") || null;
+
     const { error } = await supabase.from("service_records").insert({
-      knight_id: profile.id,
+      character_id: characterId,
       title,
       description: description || null,
-      client_level_before: parseInt(levelBefore),
-      client_level_after: parseInt(levelAfter),
       price: parseInt(price),
-      service_date: serviceDate,
+      service_date: new Date(serviceDate).toISOString(),
+      exp_gained: expGained ? parseInt(expGained.replace(/,/g, "")) : null,
+      hunt_duration_minutes: huntDurationMinutes,
+      hunting_ground: huntingGround || null,
       image_urls: imageUrls,
     });
 
@@ -107,10 +119,10 @@ export default function NewRecordPage() {
   };
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>쩔 이력 추가</CardTitle>
+          <CardTitle>파티 지원 이력 추가</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -118,7 +130,7 @@ export default function NewRecordPage() {
               <Label htmlFor="title">제목</Label>
               <Input
                 id="title"
-                placeholder="ex) 어두운 숲 50→60 쩔"
+                placeholder="ex) 어두운 숲 파티 지원"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -127,28 +139,24 @@ export default function NewRecordPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="levelBefore">쩔 전 레벨</Label>
+                <Label htmlFor="price">비용 (메소)</Label>
                 <Input
-                  id="levelBefore"
-                  type="number"
-                  min={1}
-                  max={999}
-                  placeholder="50"
-                  value={levelBefore}
-                  onChange={(e) => setLevelBefore(e.target.value)}
+                  id="price"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="10,000,000"
+                  value={withCommas(price)}
+                  onChange={handleNumericInput(setPrice)}
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="levelAfter">쩔 후 레벨</Label>
+                <Label htmlFor="serviceDate">서비스 일시</Label>
                 <Input
-                  id="levelAfter"
-                  type="number"
-                  min={1}
-                  max={999}
-                  placeholder="60"
-                  value={levelAfter}
-                  onChange={(e) => setLevelAfter(e.target.value)}
+                  id="serviceDate"
+                  type="datetime-local"
+                  value={serviceDate}
+                  onChange={(e) => setServiceDate(e.target.value)}
                   required
                 />
               </div>
@@ -156,27 +164,46 @@ export default function NewRecordPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="price">비용 (메소)</Label>
+                <Label htmlFor="expGained">경험치 획득량</Label>
                 <Input
-                  id="price"
-                  type="number"
-                  min={0}
-                  placeholder="10000000"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
+                  id="expGained"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="12,500,000"
+                  value={withCommas(expGained)}
+                  onChange={handleNumericInput(setExpGained)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="serviceDate">서비스 날짜</Label>
-                <Input
-                  id="serviceDate"
-                  type="date"
-                  value={serviceDate}
-                  onChange={(e) => setServiceDate(e.target.value)}
-                  required
-                />
+                <Label>사냥 시간</Label>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={23}
+                    placeholder="0"
+                    value={huntHours}
+                    onChange={(e) => setHuntHours(e.target.value)}
+                    className="w-full"
+                  />
+                  <span className="text-sm text-muted-foreground shrink-0">시간</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={59}
+                    placeholder="0"
+                    value={huntMinutes}
+                    onChange={(e) => setHuntMinutes(e.target.value)}
+                    className="w-full"
+                  />
+                  <span className="text-sm text-muted-foreground shrink-0">분</span>
+                </div>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>사냥터 (선택)</Label>
+              <HuntingGroundInput value={huntingGround} onChange={setHuntingGround} />
             </div>
 
             <div className="space-y-1.5">
@@ -192,12 +219,7 @@ export default function NewRecordPage() {
 
             <div className="space-y-1.5">
               <Label>인증 사진 (최대 5장)</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-              />
+              <Input type="file" accept="image/*" multiple onChange={handleImageChange} />
               {images.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {images.map((file, i) => (
@@ -222,12 +244,7 @@ export default function NewRecordPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => router.back()}
-              >
+              <Button type="button" variant="outline" className="flex-1" onClick={() => router.back()}>
                 취소
               </Button>
               <Button type="submit" className="flex-1" disabled={loading}>

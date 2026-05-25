@@ -7,9 +7,9 @@ import { Toaster } from "@/components/ui/sonner";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "메이플기사 - 쩔 서비스 검증 플랫폼",
+  title: "메이플기사 - 파티 지원 서비스 검증 플랫폼",
   description:
-    "메이플플래닛 쩔기사들의 이력을 확인하고 신뢰할 수 있는 파티원을 찾아보세요.",
+    "메이플플래닛 파티 지원기사들의 이력을 확인하고 신뢰할 수 있는 파티원을 찾아보세요.",
 };
 
 export default function RootLayout({

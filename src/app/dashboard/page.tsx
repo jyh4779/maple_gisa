@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import type { Profile, ServiceRecord } from "@/types";
-import Image from "next/image";
+import type { Character } from "@/types";
+import { CheckCircle, ShieldAlert, Plus } from "lucide-react";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -24,133 +24,113 @@ export default async function DashboardPage() {
 
   if (!profile) redirect("/auth/signup");
 
-  const { data: records } = await supabase
-    .from("service_records")
+  const { data: characters } = await supabase
+    .from("characters")
     .select("*")
-    .eq("knight_id", profile.id)
-    .order("service_date", { ascending: false });
+    .eq("profile_id", profile.id)
+    .order("created_at", { ascending: true });
 
-  const knight = profile as Profile;
-  const serviceRecords = (records ?? []) as ServiceRecord[];
+  const chars = (characters ?? []) as Character[];
 
   return (
-    <div className="space-y-8 max-w-3xl">
-      {/* 내 프로필 */}
+    <div className="space-y-8 max-w-3xl mx-auto">
+      {/* 내 계정 */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>내 프로필</CardTitle>
-          <Link href="/dashboard/profile/edit">
-            <Button variant="outline" size="sm">
-              수정
-            </Button>
-          </Link>
+        <CardHeader>
+          <CardTitle>내 계정</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Avatar className="w-16 h-16">
-              <AvatarImage src={knight.avatar_url ?? undefined} />
-              <AvatarFallback className="text-xl">
-                {knight.nickname.slice(0, 2)}
+            <Avatar className="w-14 h-14">
+              <AvatarImage src={profile.avatar_url ?? undefined} />
+              <AvatarFallback className="text-lg">
+                {profile.nickname.slice(0, 2)}
               </AvatarFallback>
             </Avatar>
-            <div className="space-y-1">
-              <p className="font-semibold text-lg">{knight.nickname}</p>
-              <p className="text-muted-foreground text-sm">{knight.character_name}</p>
-              <div className="flex gap-2">
-                <Badge>{knight.server_class}</Badge>
-                <Badge variant="outline">Lv.{knight.level}</Badge>
-              </div>
-            </div>
-          </div>
-          {knight.description && (
-            <p className="mt-3 text-sm text-muted-foreground">
-              {knight.description}
-            </p>
-          )}
-          <div className="mt-4">
-            <Link href={`/knights/${knight.id}`}>
-              <Button variant="secondary" size="sm">
-                공개 프로필 보기
-              </Button>
-            </Link>
+            <p className="font-semibold text-lg">{profile.nickname}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* 쩔 이력 */}
+      {/* 캐릭터 목록 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            쩔 이력{" "}
+            내 캐릭터{" "}
             <span className="text-muted-foreground text-base font-normal">
-              ({serviceRecords.length}건)
+              ({chars.length}개)
             </span>
           </h2>
-          <Link href="/dashboard/records/new">
-            <Button size="sm">+ 이력 추가</Button>
+          <Link href="/dashboard/characters/new">
+            <Button size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              캐릭터 등록
+            </Button>
           </Link>
         </div>
 
-        {serviceRecords.length === 0 ? (
+        {chars.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <p>아직 등록된 이력이 없습니다.</p>
-              <Link href="/dashboard/records/new">
-                <Button className="mt-4" variant="outline">
-                  첫 이력 추가하기
+            <CardContent className="py-12 text-center space-y-2">
+              <p className="font-medium">등록된 캐릭터가 없습니다.</p>
+              <p className="text-sm text-muted-foreground">
+                파티 지원기사로 활동하려면 캐릭터를 등록하고 인증을 받으세요.
+              </p>
+              <Link href="/dashboard/characters/new">
+                <Button className="mt-2">
+                  <Plus className="w-4 h-4 mr-1" />
+                  캐릭터 등록하기
                 </Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {serviceRecords.map((record) => (
-              <Card key={record.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base">{record.title}</CardTitle>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(record.service_date).toLocaleDateString("ko-KR")}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex gap-4 text-sm">
-                    <span>
-                      레벨:{" "}
-                      <span className="font-medium">
-                        {record.client_level_before} → {record.client_level_after}
-                      </span>
-                    </span>
-                    <span>
-                      비용:{" "}
-                      <span className="font-medium">
-                        {record.price.toLocaleString()}메소
-                      </span>
-                    </span>
-                  </div>
-                  {record.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {record.description}
-                    </p>
-                  )}
-                  {record.image_urls.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
-                      {record.image_urls.map((url, i) => (
-                        <div
-                          key={i}
-                          className="relative aspect-video rounded-md overflow-hidden bg-muted"
-                        >
-                          <Image
-                            src={url}
-                            alt={`이력 사진 ${i + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ))}
+          <div className="space-y-3">
+            {chars.map((char) => (
+              <Card key={char.id}>
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold">{char.character_name}</p>
+                        {char.is_verified && (
+                          <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs shrink-0">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            인증됨
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="secondary">{char.server_class}</Badge>
+                        <Badge variant="outline">Lv.{char.level}</Badge>
+                      </div>
+                      {char.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {char.description}
+                        </p>
+                      )}
                     </div>
-                  )}
+                    <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                      <Link href={`/knights/${char.id}`}>
+                        <Button variant="ghost" size="sm">공개 프로필</Button>
+                      </Link>
+                      {!char.is_verified && (
+                        <Link href={`/dashboard/characters/${char.id}/verify`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5 mr-1" />
+                            인증
+                          </Button>
+                        </Link>
+                      )}
+                      <Link href={`/dashboard/records/new?characterId=${char.id}`}>
+                        <Button size="sm">이력 추가</Button>
+                      </Link>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}

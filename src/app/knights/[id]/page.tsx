@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import type { Profile, ServiceRecord } from "@/types";
+import { CheckCircle, Plus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import type { Character, ServiceRecord } from "@/types";
+import RecordTimeline from "./RecordTimeline";
 
 export default async function KnightProfilePage({
   params,
@@ -14,118 +17,106 @@ export default async function KnightProfilePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: knight }, { data: records }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", id).single(),
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [{ data: charData }, { data: records }] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("*, profiles(nickname, avatar_url, user_id)")
+      .eq("id", id)
+      .single(),
     supabase
       .from("service_records")
       .select("*")
-      .eq("knight_id", id)
+      .eq("character_id", id)
       .order("service_date", { ascending: false }),
   ]);
 
-  if (!knight) notFound();
+  if (!charData) notFound();
 
-  const profile = knight as Profile;
+  const char = charData as Character & {
+    profiles: { nickname: string; avatar_url: string | null; user_id: string };
+  };
   const serviceRecords = (records ?? []) as ServiceRecord[];
+  const isOwner = user?.id === char.profiles?.user_id;
 
   return (
-    <div className="space-y-8 max-w-3xl">
-      {/* 프로필 헤더 */}
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* 캐릭터 헤더 */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-start gap-5">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={profile.avatar_url ?? undefined} />
-              <AvatarFallback className="text-2xl">
-                {profile.nickname.slice(0, 2)}
+            <Avatar className="w-16 h-16">
+              <AvatarImage src={char.profiles?.avatar_url ?? undefined} />
+              <AvatarFallback className="text-xl">
+                {char.profiles?.nickname.slice(0, 2)}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-2 flex-1">
               <div>
-                <h1 className="text-2xl font-bold">{profile.nickname}</h1>
-                <p className="text-muted-foreground">{profile.character_name}</p>
+                <h1 className="text-2xl font-bold">{char.character_name}</h1>
+                <p className="text-sm text-muted-foreground">{char.profiles?.nickname}</p>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Badge>{profile.server_class}</Badge>
-                <Badge variant="outline">Lv.{profile.level}</Badge>
+                <Badge>{char.server_class}</Badge>
+                <Badge variant="outline">Lv.{char.level}</Badge>
+                {char.is_verified && (
+                  <Badge className="bg-green-500 hover:bg-green-600 text-white">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    인증됨
+                  </Badge>
+                )}
               </div>
-              {profile.description && (
-                <p className="text-sm text-muted-foreground">
-                  {profile.description}
-                </p>
+              {char.description && (
+                <p className="text-sm text-muted-foreground">{char.description}</p>
               )}
             </div>
           </div>
+
+          {/* 활동 요약 */}
+          {serviceRecords.length > 0 && (
+            <div className="mt-5 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-2xl font-bold">{serviceRecords.length}</p>
+                <p className="text-xs text-muted-foreground">총 이력</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {(serviceRecords.reduce((sum, r) => sum + r.price, 0) / 100_000_000).toFixed(1)}억
+                </p>
+                <p className="text-xs text-muted-foreground">총 수익</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {serviceRecords.filter((r) => r.image_urls.length > 0).length}
+                </p>
+                <p className="text-xs text-muted-foreground">사진 있는 이력</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* 쩔 이력 */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">
-          쩔 이력{" "}
-          <span className="text-muted-foreground text-base font-normal">
-            ({serviceRecords.length}건)
-          </span>
-        </h2>
-
-        {serviceRecords.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            아직 등록된 이력이 없습니다.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {serviceRecords.map((record) => (
-              <Card key={record.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base">{record.title}</CardTitle>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(record.service_date).toLocaleDateString("ko-KR")}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex gap-4 text-sm">
-                    <span>
-                      레벨:{" "}
-                      <span className="font-medium">
-                        {record.client_level_before} → {record.client_level_after}
-                      </span>
-                    </span>
-                    <span>
-                      비용:{" "}
-                      <span className="font-medium">
-                        {record.price.toLocaleString()}메소
-                      </span>
-                    </span>
-                  </div>
-                  {record.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {record.description}
-                    </p>
-                  )}
-                  {record.image_urls.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {record.image_urls.map((url, i) => (
-                        <div
-                          key={i}
-                          className="relative aspect-video rounded-md overflow-hidden bg-muted"
-                        >
-                          <Image
-                            src={url}
-                            alt={`이력 사진 ${i + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+      {/* 이력 타임라인 */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">
+            파티 지원 이력{" "}
+            <span className="text-muted-foreground text-base font-normal">
+              ({serviceRecords.length}건)
+            </span>
+          </h2>
+          {isOwner && (
+            <Link
+              href={`/dashboard/records/new?characterId=${id}`}
+              className={buttonVariants({ size: "sm" })}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              이력 추가
+            </Link>
+          )}
+        </div>
+        <RecordTimeline records={serviceRecords} isOwner={isOwner} />
       </div>
     </div>
   );
