@@ -26,13 +26,13 @@ export default function HuntingGroundInput({
 
   const selectValue = showCustom ? "__custom__" : value;
 
-  const handleSelect = (v: string) => {
+  const handleSelect = (v: string | null) => {
     if (v === "__custom__") {
       setShowCustom(true);
       onChange("");
     } else {
       setShowCustom(false);
-      onChange(v);
+      onChange(v ?? "");
     }
   };
 
