@@ -165,6 +165,9 @@ export default function RecordDetailModal({ record, isOwner, open, onClose, onEd
             </div>
 
             <div className="flex flex-wrap gap-2">
+              {record.client_nickname && (
+                <Badge variant="secondary">손님: {record.client_nickname}</Badge>
+              )}
               <Badge variant="outline">{record.price.toLocaleString()}메소</Badge>
               {record.hunt_duration_minutes != null && (
                 <Badge variant="secondary">{formatDuration(record.hunt_duration_minutes)}</Badge>

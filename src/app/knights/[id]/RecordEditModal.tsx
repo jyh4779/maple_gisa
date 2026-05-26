@@ -34,6 +34,7 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
     record.hunt_duration_minutes != null ? String(record.hunt_duration_minutes % 60) : ""
   );
   const [huntingGround, setHuntingGround] = useState(record.hunting_ground ?? "");
+  const [clientNickname, setClientNickname] = useState(record.client_nickname ?? "");
   const [keepUrls, setKeepUrls] = useState<string[]>(record.image_urls);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,6 +70,7 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
       exp_gained: expGained ? parseInt(expGained.replace(/,/g, "")) : null,
       hunt_duration_minutes: huntDuration,
       hunting_ground: huntingGround || null,
+      client_nickname: clientNickname || null,
       keepImageUrls: keepUrls,
     }));
     for (const f of newImages) formData.append("images", f);
@@ -147,6 +149,15 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
           <div className="space-y-1.5">
             <Label>사냥터</Label>
             <HuntingGroundInput value={huntingGround} onChange={setHuntingGround} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>손님 닉네임 (선택)</Label>
+            <Input
+              placeholder="파티를 신청한 손님의 닉네임"
+              value={clientNickname}
+              onChange={(e) => setClientNickname(e.target.value)}
+            />
           </div>
 
           <div className="space-y-1.5">

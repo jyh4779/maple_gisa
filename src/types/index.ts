@@ -41,6 +41,7 @@ export type ServiceRecord = {
   character_id: string;
   title: string;
   description: string | null;
+  client_nickname: string | null;
   price: number;
   service_date: string;
   exp_gained: number | null;

@@ -56,6 +56,7 @@ export async function PATCH(
   const fields = JSON.parse(dataRaw) as {
     title: string;
     description: string | null;
+    client_nickname: string | null;
     price: number;
     service_date: string;
     exp_gained: number | null;
@@ -100,6 +101,7 @@ export async function PATCH(
     .update({
       title: fields.title,
       description: fields.description,
+      client_nickname: fields.client_nickname,
       price: fields.price,
       service_date: fields.service_date,
       exp_gained: fields.exp_gained,

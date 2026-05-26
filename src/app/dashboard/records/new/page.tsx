@@ -33,6 +33,7 @@ function NewRecordForm() {
   const [huntHours, setHuntHours] = useState("");
   const [huntMinutes, setHuntMinutes] = useState("");
   const [huntingGround, setHuntingGround] = useState("");
+  const [clientNickname, setClientNickname] = useState("");
 
   const handleNumericInput = (setter: (v: string) => void) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +106,7 @@ function NewRecordForm() {
       exp_gained: expGained ? parseInt(expGained.replace(/,/g, "")) : null,
       hunt_duration_minutes: huntDurationMinutes,
       hunting_ground: huntingGround || null,
+      client_nickname: clientNickname || null,
       image_urls: imageUrls,
     });
 
@@ -204,6 +206,16 @@ function NewRecordForm() {
             <div className="space-y-1.5">
               <Label>사냥터 (선택)</Label>
               <HuntingGroundInput value={huntingGround} onChange={setHuntingGround} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="clientNickname">손님 닉네임 (선택)</Label>
+              <Input
+                id="clientNickname"
+                placeholder="파티를 신청한 손님의 닉네임"
+                value={clientNickname}
+                onChange={(e) => setClientNickname(e.target.value)}
+              />
             </div>
 
             <div className="space-y-1.5">
