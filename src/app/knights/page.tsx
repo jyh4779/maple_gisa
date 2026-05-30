@@ -51,7 +51,7 @@ export default async function KnightsPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex gap-2 flex-wrap">
-                    <Badge variant="secondary">{char.server_class}</Badge>
+                    <Badge variant="secondary">{char.job ?? char.server_class}</Badge>
                     <Badge variant="outline">Lv.{char.level}</Badge>
                     {char.is_verified && (
                       <Badge className="bg-green-500 hover:bg-green-600 text-white">

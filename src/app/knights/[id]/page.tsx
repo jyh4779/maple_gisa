@@ -50,7 +50,8 @@ export default async function KnightProfilePage({
                 <p className="text-sm text-muted-foreground">{char.profiles?.nickname}</p>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Badge>{char.server_class}</Badge>
+                <Badge variant="secondary">{char.server_class}</Badge>
+                {char.job && <Badge>{char.job}</Badge>}
                 <Badge variant="outline">Lv.{char.level}</Badge>
                 {char.is_verified && (
                   <Badge className="bg-green-500 hover:bg-green-600 text-white">

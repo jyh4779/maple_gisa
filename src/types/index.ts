@@ -1,9 +1,13 @@
-export type ServerClass =
+export type JobCategory =
   | "전사"
   | "마법사"
   | "궁수"
   | "도적"
-  | "해적";
+  | "해적"
+  | "시그너스";
+
+/** @deprecated use JobCategory */
+export type ServerClass = JobCategory;
 
 export type Profile = {
   id: string;
@@ -17,7 +21,8 @@ export type Character = {
   id: string;
   profile_id: string;
   character_name: string;
-  server_class: ServerClass;
+  server_class: JobCategory;
+  job: string | null;
   level: number;
   description: string | null;
   active_times: string[];

@@ -43,6 +43,7 @@ export async function createCharacter(supabase: SupabaseClient, data: {
   profile_id: string;
   character_name: string;
   server_class: string;
+  job: string;
   level: number;
   description: string | null;
   active_times: string[];

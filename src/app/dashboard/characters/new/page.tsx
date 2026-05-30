@@ -16,17 +16,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import type { ServerClass } from "@/types";
+import { JOB_CATEGORIES, JOB_TREE, type JobCategory } from "@/lib/jobs";
 import { getProfileIdByUserId } from "@/repositories/profiles";
 import { createCharacter } from "@/repositories/characters";
 
-const SERVER_CLASSES: ServerClass[] = ["전사", "마법사", "궁수", "도적", "해적"];
 const TIME_SLOTS = ["오전", "오후", "저녁", "심야"] as const;
 const HUNTING_GROUND_PRESETS = ["잠실역", "난파선", "파사정령의 숲", "부활하는 기억", "깊은 바다 협곡2"];
 
 export default function NewCharacterPage() {
   const [characterName, setCharacterName] = useState("");
-  const [serverClass, setServerClass] = useState<ServerClass>("전사");
+  const [jobCategory, setJobCategory] = useState<JobCategory>("전사");
+  const [job, setJob] = useState<string>(JOB_TREE["전사"][0]);
   const [level, setLevel] = useState("");
   const [description, setDescription] = useState("");
   const [activeTimes, setActiveTimes] = useState<string[]>([]);
@@ -34,6 +34,11 @@ export default function NewCharacterPage() {
   const [customGround, setCustomGround] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const handleCategoryChange = (category: JobCategory) => {
+    setJobCategory(category);
+    setJob(JOB_TREE[category][0]);
+  };
 
   const toggleTime = (t: string) => {
     setActiveTimes((prev) =>
@@ -81,7 +86,8 @@ export default function NewCharacterPage() {
     const { error } = await createCharacter(supabase, {
       profile_id: profile.id,
       character_name: characterName,
-      server_class: serverClass,
+      server_class: jobCategory,
+      job,
       level: parseInt(level),
       description: description || null,
       active_times: activeTimes,
@@ -126,14 +132,14 @@ export default function NewCharacterPage() {
               <div className="space-y-1.5">
                 <Label>직업 계열</Label>
                 <Select
-                  value={serverClass}
-                  onValueChange={(v) => setServerClass(v as ServerClass)}
+                  value={jobCategory}
+                  onValueChange={(v) => handleCategoryChange(v as JobCategory)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {SERVER_CLASSES.map((c) => (
+                    {JOB_CATEGORIES.map((c) => (
                       <SelectItem key={c} value={c}>
                         {c}
                       </SelectItem>
@@ -142,18 +148,34 @@ export default function NewCharacterPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="level">레벨</Label>
-                <Input
-                  id="level"
-                  type="number"
-                  placeholder="ex) 200"
-                  min={1}
-                  max={999}
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  required
-                />
+                <Label>직업</Label>
+                <Select value={job} onValueChange={(v) => v && setJob(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JOB_TREE[jobCategory].map((j) => (
+                      <SelectItem key={j} value={j}>
+                        {j}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="level">레벨</Label>
+              <Input
+                id="level"
+                type="number"
+                placeholder="ex) 200"
+                min={1}
+                max={999}
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                required
+              />
             </div>
 
             <div className="space-y-1.5">
