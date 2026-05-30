@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
-type AuthState = "unauthenticated" | "no-profile" | "ready";
+type AuthState = "unauthenticated" | "ready";
 
 export default function RegisterButton() {
   const [authState, setAuthState] = useState<AuthState | null>(null);
@@ -13,19 +13,9 @@ export default function RegisterButton() {
 
   useEffect(() => {
     const supabase = createClient();
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setAuthState("unauthenticated");
-        return;
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .single();
-      setAuthState(profile ? "ready" : "no-profile");
-    })();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthState(session ? "ready" : "unauthenticated");
+    });
   }, []);
 
   const handleClick = async () => {
@@ -37,7 +27,7 @@ export default function RegisterButton() {
       });
       return;
     }
-    router.push(authState === "no-profile" ? "/auth/signup?step=profile" : "/dashboard/characters/new");
+    router.push("/dashboard");
   };
 
   return (
