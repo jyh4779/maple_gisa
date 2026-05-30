@@ -45,6 +45,8 @@ export async function createCharacter(supabase: SupabaseClient, data: {
   server_class: string;
   level: number;
   description: string | null;
+  active_times: string[];
+  preferred_hunting_grounds: string[];
 }) {
   return supabase.from("characters").insert(data);
 }

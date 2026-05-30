@@ -20,6 +20,8 @@ export type Character = {
   server_class: ServerClass;
   level: number;
   description: string | null;
+  active_times: string[];
+  preferred_hunting_grounds: string[];
   is_verified: boolean;
   verification_code: string | null;
   verification_expires_at: string | null;
