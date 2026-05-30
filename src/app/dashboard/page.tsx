@@ -7,34 +7,23 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Character } from "@/types";
 import { CheckCircle, ShieldAlert, Plus } from "lucide-react";
+import { getProfileByUserId } from "@/repositories/profiles";
+import { getCharactersByProfileId } from "@/repositories/characters";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const { data: profile } = await getProfileByUserId(supabase, user.id);
   if (!profile) redirect("/auth/signup");
 
-  const { data: characters } = await supabase
-    .from("characters")
-    .select("*")
-    .eq("profile_id", profile.id)
-    .order("created_at", { ascending: true });
-
+  const { data: characters } = await getCharactersByProfileId(supabase, profile.id);
   const chars = (characters ?? []) as Character[];
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
-      {/* 내 계정 */}
       <Card>
         <CardHeader>
           <CardTitle>내 계정</CardTitle>
@@ -52,7 +41,6 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* 캐릭터 목록 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">

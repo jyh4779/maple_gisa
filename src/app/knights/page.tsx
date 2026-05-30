@@ -5,13 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import type { Character } from "@/types";
 import { CheckCircle } from "lucide-react";
+import { getAllCharactersWithProfiles } from "@/repositories/characters";
 
 export default async function KnightsPage() {
   const supabase = await createClient();
-  const { data: characters } = await supabase
-    .from("characters")
-    .select("*, profiles(nickname, avatar_url)")
-    .order("level", { ascending: false });
+  const { data: characters } = await getAllCharactersWithProfiles(supabase);
 
   const chars = (characters ?? []) as (Character & {
     profiles: { nickname: string; avatar_url: string | null };

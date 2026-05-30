@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import HuntingGroundInput from "@/components/HuntingGroundInput";
+import { createServiceRecord } from "@/repositories/serviceRecords";
 
 export default function NewRecordPage() {
   return (
@@ -25,15 +26,18 @@ function NewRecordForm() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState(""); // 숫자만 저장 (콤마 제거)
+  const [clientNickname, setClientNickname] = useState("");
+  const [price, setPrice] = useState("");
   const [serviceDate, setServiceDate] = useState(
-    new Date().toISOString().slice(0, 16) // "YYYY-MM-DDTHH:mm"
+    new Date().toISOString().slice(0, 16)
   );
-  const [expGained, setExpGained] = useState(""); // 숫자만 저장
+  const [expGained, setExpGained] = useState("");
   const [huntHours, setHuntHours] = useState("");
   const [huntMinutes, setHuntMinutes] = useState("");
   const [huntingGround, setHuntingGround] = useState("");
-  const [clientNickname, setClientNickname] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleNumericInput = (setter: (v: string) => void) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,9 +46,6 @@ function NewRecordForm() {
 
   const withCommas = (val: string) =>
     val ? parseInt(val).toLocaleString() : "";
-  const [images, setImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     if (!characterId) {
@@ -97,16 +98,16 @@ function NewRecordForm() {
     const huntDurationMinutes =
       (parseInt(huntHours || "0") * 60) + parseInt(huntMinutes || "0") || null;
 
-    const { error } = await supabase.from("service_records").insert({
+    const { error } = await createServiceRecord(supabase, {
       character_id: characterId,
       title,
       description: description || null,
+      client_nickname: clientNickname || null,
       price: parseInt(price),
       service_date: new Date(serviceDate).toISOString(),
       exp_gained: expGained ? parseInt(expGained.replace(/,/g, "")) : null,
       hunt_duration_minutes: huntDurationMinutes,
       hunting_ground: huntingGround || null,
-      client_nickname: clientNickname || null,
       image_urls: imageUrls,
     });
 

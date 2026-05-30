@@ -33,7 +33,6 @@ export default function RecordDetailModal({ record, isOwner, open, onClose, onEd
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // 댓글 폼
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [commentImage, setCommentImage] = useState<File | null>(null);
@@ -114,7 +113,6 @@ export default function RecordDetailModal({ record, isOwner, open, onClose, onEd
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
-        {/* 이미지 슬라이더 */}
         {images.length > 0 ? (
           <div className="relative bg-black aspect-video w-full shrink-0">
             <Image src={images[imgIndex]} alt={`이력 사진 ${imgIndex + 1}`} fill className="object-contain" />
@@ -143,9 +141,7 @@ export default function RecordDetailModal({ record, isOwner, open, onClose, onEd
           </div>
         )}
 
-        {/* 스크롤 영역 */}
         <div className="overflow-y-auto flex-1">
-          {/* 상세 정보 */}
           <div className="p-5 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <DialogHeader className="flex-1">
@@ -202,14 +198,12 @@ export default function RecordDetailModal({ record, isOwner, open, onClose, onEd
             )}
           </div>
 
-          {/* 댓글 섹션 */}
           <div className="border-t px-5 py-4 space-y-4">
             <p className="text-sm font-semibold">
               손님 후기{" "}
               <span className="text-muted-foreground font-normal">({comments.length})</span>
             </p>
 
-            {/* 댓글 목록 */}
             {commentsLoading ? (
               <p className="text-xs text-muted-foreground">불러오는 중...</p>
             ) : comments.length === 0 ? (
@@ -244,56 +238,56 @@ export default function RecordDetailModal({ record, isOwner, open, onClose, onEd
               </div>
             )}
 
-            {/* 댓글 작성 폼 - 손님만 */}
-            {!isOwner && <form onSubmit={handleCommentSubmit} className="space-y-3 pt-2 border-t">
-              <p className="text-xs font-medium text-muted-foreground">후기 남기기</p>
-              <div className="space-y-1.5">
-                <Label className="text-xs">닉네임</Label>
-                <Input
-                  placeholder="손님 닉네임"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
-                  required
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">내용</Label>
-                <Textarea
-                  placeholder="파티 지원 서비스에 대한 후기를 남겨주세요"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  required
-                  rows={2}
-                  className="text-sm resize-none"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">사진 첨부 (선택)</Label>
-                {commentImagePreview ? (
-                  <div className="relative inline-block">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={commentImagePreview} alt="미리보기"
-                      className="h-20 rounded border object-cover" />
-                    <button type="button"
-                      onClick={() => { setCommentImage(null); setCommentImagePreview(null); }}
-                      className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-2 w-fit cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    <Upload className="w-4 h-4" />
-                    사진 선택
-                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                      className="hidden" onChange={handleCommentImageChange} />
-                  </label>
-                )}
-              </div>
-              <Button type="submit" size="sm" disabled={submitting} className="w-full">
-                {submitting ? "등록 중..." : "후기 등록"}
-              </Button>
-            </form>}
+            {!isOwner && (
+              <form onSubmit={handleCommentSubmit} className="space-y-3 pt-2 border-t">
+                <p className="text-xs font-medium text-muted-foreground">후기 남기기</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">닉네임</Label>
+                  <Input
+                    placeholder="손님 닉네임"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    required
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">내용</Label>
+                  <Textarea
+                    placeholder="파티 지원 서비스에 대한 후기를 남겨주세요"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    required
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">사진 첨부 (선택)</Label>
+                  {commentImagePreview ? (
+                    <div className="relative inline-block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={commentImagePreview} alt="미리보기" className="h-20 rounded border object-cover" />
+                      <button type="button"
+                        onClick={() => { setCommentImage(null); setCommentImagePreview(null); }}
+                        className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 w-fit cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <Upload className="w-4 h-4" />
+                      사진 선택
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden" onChange={handleCommentImageChange} />
+                    </label>
+                  )}
+                </div>
+                <Button type="submit" size="sm" disabled={submitting} className="w-full">
+                  {submitting ? "등록 중..." : "후기 등록"}
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </DialogContent>

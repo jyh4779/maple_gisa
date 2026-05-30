@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { approveCharacter, getCharacterScreenshotPath, rejectCharacter } from "@/repositories/characters";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -22,24 +23,10 @@ export async function POST(request: Request) {
   const adminSupabase = createAdminClient();
 
   if (action === "approve") {
-    const { error } = await adminSupabase
-      .from("characters")
-      .update({
-        is_verified: true,
-        verification_code: null,
-        verification_expires_at: null,
-        verification_screenshot_url: null,
-      })
-      .eq("id", characterId);
-
+    const { error } = await approveCharacter(adminSupabase, characterId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
-    // 거절: 스크린샷만 삭제하여 재신청 가능 상태로
-    const { data: char } = await adminSupabase
-      .from("characters")
-      .select("verification_screenshot_url")
-      .eq("id", characterId)
-      .single();
+    const { data: char } = await getCharacterScreenshotPath(adminSupabase, characterId);
 
     if (char?.verification_screenshot_url) {
       await adminSupabase.storage
@@ -47,11 +34,7 @@ export async function POST(request: Request) {
         .remove([char.verification_screenshot_url]);
     }
 
-    const { error } = await adminSupabase
-      .from("characters")
-      .update({ verification_screenshot_url: null })
-      .eq("id", characterId);
-
+    const { error } = await rejectCharacter(adminSupabase, characterId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

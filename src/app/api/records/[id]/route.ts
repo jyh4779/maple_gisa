@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getServiceRecordById, updateServiceRecord, deleteServiceRecord } from "@/repositories/serviceRecords";
+import { getCharacterProfileId } from "@/repositories/characters";
+import { getProfileUserIdById } from "@/repositories/profiles";
 
 const STORAGE_PUBLIC_PREFIX = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/service-records/`;
 
@@ -13,28 +16,13 @@ async function checkOwnership(
   recordId: string,
   userId: string
 ): Promise<{ record: { id: string; image_urls: string[]; character_id: string } | null; authorized: boolean }> {
-  const { data: record } = await supabase
-    .from("service_records")
-    .select("id, image_urls, character_id")
-    .eq("id", recordId)
-    .single();
-
+  const { data: record } = await getServiceRecordById(supabase, recordId);
   if (!record) return { record: null, authorized: false };
 
-  const { data: character } = await supabase
-    .from("characters")
-    .select("profile_id")
-    .eq("id", record.character_id)
-    .single();
-
+  const { data: character } = await getCharacterProfileId(supabase, record.character_id);
   if (!character) return { record, authorized: false };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("user_id")
-    .eq("id", character.profile_id)
-    .single();
-
+  const { data: profile } = await getProfileUserIdById(supabase, character.profile_id);
   return { record, authorized: profile?.user_id === userId };
 }
 
@@ -65,7 +53,6 @@ export async function PATCH(
     keepImageUrls: string[];
   };
 
-  // 삭제된 이미지 storage에서 제거
   const deletedUrls = (record.image_urls as string[]).filter(
     (u) => !fields.keepImageUrls.includes(u)
   );
@@ -76,7 +63,6 @@ export async function PATCH(
       .remove(deletedUrls.map(urlToPath));
   }
 
-  // 새 이미지 업로드
   const newImageUrls: string[] = [];
   const imageFiles = formData.getAll("images") as File[];
   for (const file of imageFiles) {
@@ -92,25 +78,18 @@ export async function PATCH(
     newImageUrls.push(urlData.publicUrl);
   }
 
-  const finalImageUrls = [...fields.keepImageUrls, ...newImageUrls];
-
-  // 소유권은 checkOwnership에서 이미 확인했으므로 admin client로 RLS 우회
   const adminSupabase = createAdminClient();
-  const { data: rows, error } = await adminSupabase
-    .from("service_records")
-    .update({
-      title: fields.title,
-      description: fields.description,
-      client_nickname: fields.client_nickname,
-      price: fields.price,
-      service_date: fields.service_date,
-      exp_gained: fields.exp_gained,
-      hunt_duration_minutes: fields.hunt_duration_minutes,
-      hunting_ground: fields.hunting_ground,
-      image_urls: finalImageUrls,
-    })
-    .eq("id", id)
-    .select();
+  const { data: rows, error } = await updateServiceRecord(adminSupabase, id, {
+    title: fields.title,
+    description: fields.description,
+    client_nickname: fields.client_nickname,
+    price: fields.price,
+    service_date: fields.service_date,
+    exp_gained: fields.exp_gained,
+    hunt_duration_minutes: fields.hunt_duration_minutes,
+    hunting_ground: fields.hunting_ground,
+    image_urls: [...fields.keepImageUrls, ...newImageUrls],
+  });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!rows || rows.length === 0) return NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 });
@@ -136,7 +115,7 @@ export async function DELETE(
     await adminSupabase.storage.from("service-records").remove(urls.map(urlToPath));
   }
 
-  const { error } = await supabase.from("service_records").delete().eq("id", id);
+  const { error } = await deleteServiceRecord(supabase, id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

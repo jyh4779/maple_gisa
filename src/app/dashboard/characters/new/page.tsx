@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { ServerClass } from "@/types";
+import { getProfileIdByUserId, } from "@/repositories/profiles";
+import { createCharacter } from "@/repositories/characters";
 
 const SERVER_CLASSES: ServerClass[] = ["전사", "마법사", "궁수", "도적", "해적"];
 
@@ -40,19 +42,14 @@ export default function NewCharacterPage() {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
+    const { data: profile } = await getProfileIdByUserId(supabase, user.id);
     if (!profile) {
       toast.error("프로필을 찾을 수 없습니다.");
       setLoading(false);
       return;
     }
 
-    const { error } = await supabase.from("characters").insert({
+    const { error } = await createCharacter(supabase, {
       profile_id: profile.id,
       character_name: characterName,
       server_class: serverClass,
@@ -137,12 +134,7 @@ export default function NewCharacterPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => router.back()}
-              >
+              <Button type="button" variant="outline" className="flex-1" onClick={() => router.back()}>
                 취소
               </Button>
               <Button type="submit" className="flex-1" disabled={loading}>

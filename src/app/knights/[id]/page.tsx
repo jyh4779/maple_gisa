@@ -7,7 +7,9 @@ import { notFound } from "next/navigation";
 import { CheckCircle, Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import type { Character, ServiceRecord } from "@/types";
-import RecordTimeline from "./RecordTimeline";
+import RecordTimeline from "@/features/records/RecordTimeline";
+import { getCharacterWithProfileById } from "@/repositories/characters";
+import { getServiceRecordsByCharacterId } from "@/repositories/serviceRecords";
 
 export default async function KnightProfilePage({
   params,
@@ -16,20 +18,11 @@ export default async function KnightProfilePage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: charData }, { data: records }] = await Promise.all([
-    supabase
-      .from("characters")
-      .select("*, profiles(nickname, avatar_url, user_id)")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("service_records")
-      .select("*")
-      .eq("character_id", id)
-      .order("service_date", { ascending: false }),
+    getCharacterWithProfileById(supabase, id),
+    getServiceRecordsByCharacterId(supabase, id),
   ]);
 
   if (!charData) notFound();
@@ -42,7 +35,6 @@ export default async function KnightProfilePage({
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* 캐릭터 헤더 */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-start gap-5">
@@ -73,7 +65,6 @@ export default async function KnightProfilePage({
             </div>
           </div>
 
-          {/* 활동 요약 */}
           {serviceRecords.length > 0 && (
             <div className="mt-5 pt-4 border-t grid grid-cols-3 gap-4 text-center">
               <div>
@@ -97,7 +88,6 @@ export default async function KnightProfilePage({
         </CardContent>
       </Card>
 
-      {/* 이력 타임라인 */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ImageOff, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { ServiceRecord } from "@/types";
 import HuntingGroundInput from "@/components/HuntingGroundInput";
 
@@ -22,6 +22,7 @@ interface Props {
 export default function RecordEditModal({ record, open, onClose, onSaved }: Props) {
   const [title, setTitle] = useState(record.title);
   const [description, setDescription] = useState(record.description ?? "");
+  const [clientNickname, setClientNickname] = useState(record.client_nickname ?? "");
   const [price, setPrice] = useState(String(record.price));
   const [serviceDate, setServiceDate] = useState(
     new Date(record.service_date).toISOString().slice(0, 16)
@@ -34,7 +35,6 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
     record.hunt_duration_minutes != null ? String(record.hunt_duration_minutes % 60) : ""
   );
   const [huntingGround, setHuntingGround] = useState(record.hunting_ground ?? "");
-  const [clientNickname, setClientNickname] = useState(record.client_nickname ?? "");
   const [keepUrls, setKeepUrls] = useState<string[]>(record.image_urls);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,12 +65,12 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
     formData.append("data", JSON.stringify({
       title,
       description: description || null,
+      client_nickname: clientNickname || null,
       price: parseInt(price.replace(/,/g, "")),
       service_date: new Date(serviceDate).toISOString(),
       exp_gained: expGained ? parseInt(expGained.replace(/,/g, "")) : null,
       hunt_duration_minutes: huntDuration,
       hunting_ground: huntingGround || null,
-      client_nickname: clientNickname || null,
       keepImageUrls: keepUrls,
     }));
     for (const f of newImages) formData.append("images", f);
@@ -165,7 +165,6 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
 
-          {/* 기존 이미지 */}
           {keepUrls.length > 0 && (
             <div className="space-y-1.5">
               <Label>기존 사진</Label>
@@ -186,7 +185,6 @@ export default function RecordEditModal({ record, open, onClose, onSaved }: Prop
             </div>
           )}
 
-          {/* 새 이미지 */}
           <div className="space-y-1.5">
             <Label>사진 추가 (현재 {keepUrls.length + newImages.length}/5장)</Label>
             <Input

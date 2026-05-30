@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  getCharacterForVerification,
+  updateVerificationCode,
+  updateVerificationScreenshot,
+} from "@/repositories/characters";
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -18,20 +23,13 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: character } = await supabase
-    .from("characters")
-    .select("id, is_verified, verification_code, verification_expires_at, verification_screenshot_url, profiles(user_id)")
-    .eq("id", characterId)
-    .single();
-
+  const { data: character } = await getCharacterForVerification(supabase, characterId);
   if (!character) return NextResponse.json({ error: "캐릭터를 찾을 수 없습니다." }, { status: 404 });
 
   const profile = character.profiles as unknown as { user_id: string };
   if (profile.user_id !== user.id) return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
 
   if (character.is_verified) return NextResponse.json({ verified: true });
-
-  // 스크린샷이 업로드되어 관리자 검토 대기 중
   if (character.verification_screenshot_url) return NextResponse.json({ pending: true });
 
   const isExpired =
@@ -42,10 +40,7 @@ export async function GET(request: Request) {
   if (isExpired) {
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    await supabase
-      .from("characters")
-      .update({ verification_code: code, verification_expires_at: expiresAt })
-      .eq("id", characterId);
+    await updateVerificationCode(supabase, characterId, code, expiresAt);
     return NextResponse.json({ code, expiresAt });
   }
 
@@ -64,12 +59,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: character } = await supabase
-    .from("characters")
-    .select("id, is_verified, verification_code, verification_expires_at, profiles(user_id)")
-    .eq("id", characterId)
-    .single();
-
+  const { data: character } = await getCharacterForVerification(supabase, characterId);
   if (!character) return NextResponse.json({ error: "캐릭터를 찾을 수 없습니다." }, { status: 404 });
 
   const profile = character.profiles as unknown as { user_id: string };
@@ -103,11 +93,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "이미지 업로드 실패: " + uploadError.message }, { status: 500 });
   }
 
-  const { error: updateError } = await adminSupabase
-    .from("characters")
-    .update({ verification_screenshot_url: path })
-    .eq("id", characterId);
-
+  const { error: updateError } = await updateVerificationScreenshot(adminSupabase, characterId, path);
   if (updateError) {
     return NextResponse.json({ error: "저장 실패: " + updateError.message }, { status: 500 });
   }

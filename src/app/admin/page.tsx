@@ -3,7 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import AdminVerifyList from "./AdminVerifyList";
+import AdminVerifyList from "@/features/admin/AdminVerifyList";
+import { getPendingVerificationCharacters } from "@/repositories/characters";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -14,16 +15,8 @@ export default async function AdminPage() {
   }
 
   const adminSupabase = createAdminClient();
+  const { data: pending } = await getPendingVerificationCharacters(adminSupabase);
 
-  // 인증 대기 중인 캐릭터 목록
-  const { data: pending } = await adminSupabase
-    .from("characters")
-    .select("id, character_name, level, server_class, verification_code, verification_screenshot_url, profiles(nickname)")
-    .not("verification_screenshot_url", "is", null)
-    .eq("is_verified", false)
-    .order("created_at", { ascending: true });
-
-  // 각 스크린샷에 대해 signed URL 생성
   const items = await Promise.all(
     (pending ?? []).map(async (char) => {
       const { data: signedUrl } = await adminSupabase.storage

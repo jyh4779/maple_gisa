@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCommentsByRecordId, createComment } from "@/repositories/comments";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,11 +9,7 @@ export async function GET(request: Request) {
   if (!recordId) return NextResponse.json({ error: "record_id 필요" }, { status: 400 });
 
   const supabase = await createClient();
-  const { data: comments, error } = await supabase
-    .from("record_comments")
-    .select("*")
-    .eq("record_id", recordId)
-    .order("created_at", { ascending: true });
+  const { data: comments, error } = await getCommentsByRecordId(supabase, recordId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ comments });
@@ -30,7 +27,6 @@ export async function POST(request: Request) {
   }
 
   const adminSupabase = createAdminClient();
-
   let imageUrl: string | null = null;
 
   if (imageFile && imageFile.size > 0) {
@@ -46,21 +42,18 @@ export async function POST(request: Request) {
       .from("service-records")
       .upload(path, Buffer.from(bytes), { contentType: imageFile.type });
 
-    if (uploadError) {
-      return NextResponse.json({ error: "이미지 업로드 실패" }, { status: 500 });
-    }
+    if (uploadError) return NextResponse.json({ error: "이미지 업로드 실패" }, { status: 500 });
 
-    const { data: urlData } = adminSupabase.storage
-      .from("service-records")
-      .getPublicUrl(path);
+    const { data: urlData } = adminSupabase.storage.from("service-records").getPublicUrl(path);
     imageUrl = urlData.publicUrl;
   }
 
-  const { data: comment, error } = await adminSupabase
-    .from("record_comments")
-    .insert({ record_id: recordId, author_name: authorName, content, image_url: imageUrl })
-    .select()
-    .single();
+  const { data: comment, error } = await createComment(adminSupabase, {
+    record_id: recordId,
+    author_name: authorName,
+    content,
+    image_url: imageUrl,
+  });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ comment });

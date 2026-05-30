@@ -80,7 +80,6 @@ export default function RecordTimeline({
 
   return (
     <>
-      {/* 검색 */}
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
@@ -100,12 +99,8 @@ export default function RecordTimeline({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40">
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground w-8">
-                  사진
-                </th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">
-                  제목
-                </th>
+                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground w-8">사진</th>
+                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">제목</th>
                 {cols.map(({ key, label }) => (
                   <th key={key} className="px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap">
                     <button
@@ -128,7 +123,6 @@ export default function RecordTimeline({
                     onClick={() => setSelected(record)}
                     className={`cursor-pointer hover:bg-accent transition-colors ${idx !== filtered.length - 1 ? "border-b" : ""}`}
                   >
-                    {/* 썸네일 */}
                     <td className="px-3 py-2.5">
                       <div className="w-10 h-10 rounded-md overflow-hidden bg-muted shrink-0 flex items-center justify-center">
                         {thumb
@@ -137,28 +131,22 @@ export default function RecordTimeline({
                         }
                       </div>
                     </td>
-                    {/* 제목 */}
                     <td className="px-3 py-2.5 min-w-[140px]">
                       <p className="font-medium leading-snug">{record.title}</p>
                     </td>
-                    {/* 날짜 */}
                     <td className="px-3 py-2.5 text-center text-muted-foreground whitespace-nowrap">
                       {new Date(record.service_date).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}
                     </td>
-                    {/* 사냥터 */}
                     <td className="px-3 py-2.5 text-center text-muted-foreground whitespace-nowrap">
                       {record.hunting_ground ?? "-"}
                     </td>
-                    {/* 비용 */}
                     <td className="px-3 py-2.5 text-center whitespace-nowrap">
                       {record.price.toLocaleString()}
                       <span className="text-xs text-muted-foreground ml-0.5">메소</span>
                     </td>
-                    {/* EXP */}
                     <td className="px-3 py-2.5 text-center text-muted-foreground whitespace-nowrap">
                       {record.exp_gained != null ? record.exp_gained.toLocaleString() : "-"}
                     </td>
-                    {/* 사냥시간 */}
                     <td className="px-3 py-2.5 text-center text-muted-foreground whitespace-nowrap">
                       {record.hunt_duration_minutes != null
                         ? formatDuration(record.hunt_duration_minutes)

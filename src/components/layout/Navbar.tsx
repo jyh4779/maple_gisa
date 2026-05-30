@@ -51,8 +51,8 @@ export default function Navbar() {
   return (
     <header className="border-b bg-background">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg text-primary">
-          메이플기사
+        <Link href="/" className="font-bold text-lg tracking-tight">
+          <span className="text-indigo-600">Maple</span>Trust
         </Link>
         <nav className="flex items-center gap-3">
           <Link href="/knights">

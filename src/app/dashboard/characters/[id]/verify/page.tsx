@@ -215,7 +215,7 @@ export default function VerifyPage() {
           disabled={!image || submitting || isExpired}
           onClick={handleSubmit}
         >
-          {submitting ? "AI 분석 중..." : "인증하기"}
+          {submitting ? "업로드 중..." : "인증하기"}
         </Button>
       </div>
     </div>
