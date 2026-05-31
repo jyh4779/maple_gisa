@@ -19,9 +19,9 @@ import { toast } from "sonner";
 import { JOB_CATEGORIES, JOB_TREE, type JobCategory } from "@/lib/jobs";
 import { getProfileIdByUserId } from "@/repositories/profiles";
 import { createCharacter } from "@/repositories/characters";
+import HuntingGroundCombobox from "@/components/HuntingGroundCombobox";
 
 const TIME_SLOTS = ["오전", "오후", "저녁", "심야"] as const;
-const HUNTING_GROUND_PRESETS = ["잠실역", "난파선", "파사정령의 숲", "부활하는 기억", "깊은 바다 협곡2"];
 
 export default function NewCharacterPage() {
   const [characterName, setCharacterName] = useState("");
@@ -31,7 +31,6 @@ export default function NewCharacterPage() {
   const [description, setDescription] = useState("");
   const [activeTimes, setActiveTimes] = useState<string[]>([]);
   const [preferredGrounds, setPreferredGrounds] = useState<string[]>([]);
-  const [customGround, setCustomGround] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -44,24 +43,6 @@ export default function NewCharacterPage() {
     setActiveTimes((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
-  };
-
-  const togglePresetGround = (g: string) => {
-    setPreferredGrounds((prev) =>
-      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
-    );
-  };
-
-  const addCustomGround = () => {
-    const trimmed = customGround.trim();
-    if (trimmed && !preferredGrounds.includes(trimmed)) {
-      setPreferredGrounds((prev) => [...prev, trimmed]);
-    }
-    setCustomGround("");
-  };
-
-  const removeGround = (g: string) => {
-    setPreferredGrounds((prev) => prev.filter((x) => x !== g));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -200,66 +181,10 @@ export default function NewCharacterPage() {
 
             <div className="space-y-1.5">
               <Label>주요 활동 사냥터 (선택)</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {HUNTING_GROUND_PRESETS.map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => togglePresetGround(g)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      preferredGrounds.includes(g)
-                        ? "border-transparent bg-primary text-primary-foreground"
-                        : "border-input bg-background text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="직접 입력"
-                  value={customGround}
-                  onChange={(e) => setCustomGround(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addCustomGround();
-                    }
-                  }}
-                  className="h-8 text-sm"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCustomGround}
-                  disabled={!customGround.trim()}
-                >
-                  추가
-                </Button>
-              </div>
-              {preferredGrounds.filter((g) => !HUNTING_GROUND_PRESETS.includes(g)).length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {preferredGrounds
-                    .filter((g) => !HUNTING_GROUND_PRESETS.includes(g))
-                    .map((g) => (
-                      <span
-                        key={g}
-                        className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                      >
-                        {g}
-                        <button
-                          type="button"
-                          onClick={() => removeGround(g)}
-                          className="ml-0.5 opacity-70 hover:opacity-100"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                </div>
-              )}
+              <HuntingGroundCombobox
+                value={preferredGrounds}
+                onChange={setPreferredGrounds}
+              />
             </div>
 
             <div className="space-y-1.5">
